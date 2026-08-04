@@ -1,11 +1,3 @@
-"""Lectura y escritura robusta de los archivos JSON de entrada/salida.
-
-Los archivos de entrada pueden no existir o contener JSON inválido
-(así lo advierte el enunciado). Aquí centralizamos ese manejo de
-errores para que el resto del programa no tenga que preocuparse por
-excepciones de bajo nivel.
-"""
-
 from __future__ import annotations
 
 import json
@@ -23,6 +15,11 @@ class InputLoadError(Exception):
 def load_prompts(path: Path) -> list[str]:
     """Carga la lista de prompts en lenguaje natural.
 
+    Acepta dos formatos, porque el enunciado avisa de que los archivos
+    de entrada pueden variar entre evaluaciones:
+      1. Un array de strings: ["prompt 1", "prompt 2", ...]
+      2. Un array de objetos: [{"prompt": "prompt 1"}, ...]
+
     Args:
         path: Ruta al archivo function_calling_tests.json.
 
@@ -31,7 +28,7 @@ def load_prompts(path: Path) -> list[str]:
 
     Raises:
         InputLoadError: si el archivo no existe, no es JSON válido,
-            o no tiene la forma esperada (array de strings).
+            o no tiene ninguna de las dos formas esperadas.
     """
     data = _read_json(path)
 
@@ -43,11 +40,15 @@ def load_prompts(path: Path) -> list[str]:
 
     prompts: list[str] = []
     for i, item in enumerate(data):
-        if not isinstance(item, str):
+        if isinstance(item, str):
+            prompts.append(item)
+        elif isinstance(item, dict) and isinstance(item.get("prompt"), str):
+            prompts.append(item["prompt"])
+        else:
             raise InputLoadError(
-                f"{path}: el elemento en la posición {i} no es un string"
+                f"{path}: el elemento en la posición {i} no es un string "
+                f'ni un objeto con clave "prompt" válida: {item!r}'
             )
-        prompts.append(item)
 
     return prompts
 
@@ -83,7 +84,8 @@ def load_function_definitions(path: Path) -> list[FunctionDefinition]:
             ) from exc
 
     if not definitions:
-        raise InputLoadError(f"{path}: no se encontró ninguna función definida")
+        raise InputLoadError(f"{path}: no se encontró ninguna función definida"
+                             )
 
     return definitions
 
