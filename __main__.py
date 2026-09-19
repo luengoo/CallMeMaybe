@@ -86,17 +86,19 @@ def main(argv: list[str] | None = None) -> int:
         prompts = load_prompts(args.input)
         definitions = load_function_definitions(DEFAULT_DEFINITIONS_PATH)
     except InputLoadError as exc:
-        print(f"Error al cargar los archivos de entrada: {exc}", file=sys.stderr)
+        print("Error al cargar los "
+              f"archivos de entrada: {exc}", file=sys.stderr)
         return 1
 
     if not prompts:
         print("No hay prompts que procesar. Nada que hacer.", file=sys.stderr)
         return 0
 
-    print("Cargando el modelo LLM (esto puede tardar un poco)...", file=sys.stderr)
+    print("Cargando el modelo LLM (esto puede tardar un poco)...",
+          file=sys.stderr)
     try:
         llm = LLMClient()
-    except Exception as exc:  # noqa: BLE001 - cualquier fallo de carga es fatal
+    except Exception as exc:
         print(f"Error al cargar el modelo LLM: {exc}", file=sys.stderr)
         return 1
 
@@ -114,8 +116,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         except FunctionCallGenerationError as exc:
             failed += 1
-            print(f"[{i}/{len(prompts)}] FALLO en {prompt!r}: {exc}", file=sys.stderr)
-        except Exception as exc:  # noqa: BLE001 - nunca debe crashear el programa
+            print(f"[{i}/{len(prompts)}] FALLO en {prompt!r}: {exc}",
+                  file=sys.stderr)
+        except Exception as exc:
             failed += 1
             print(
                 f"[{i}/{len(prompts)}] ERROR INESPERADO en {prompt!r}: {exc}",
