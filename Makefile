@@ -1,4 +1,5 @@
 UV = uv
+FUNCTIONS_PATH = data/input/functions_definition.json
 INPUT_PATH = data/input/function_calling_tests.json
 OUTPUT_PATH = data/output/function_calling_results.json
 
@@ -24,10 +25,10 @@ install:
 	$(UV) sync
 
 run:
-	$(UV) run python -m src --input $(INPUT_PATH) --output $(OUTPUT_PATH)
+	$(UV) run python -m src --functions_definition $(FUNCTIONS_PATH) --input $(INPUT_PATH) --output $(OUTPUT_PATH)
 
 debug:
-	$(UV) run python -m pdb -m src --input $(INPUT_PATH) --output $(OUTPUT_PATH)
+	$(UV) run python -m pdb -m src --functions_definition $(FUNCTIONS_PATH) --input $(INPUT_PATH) --output $(OUTPUT_PATH)
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +

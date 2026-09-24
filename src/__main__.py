@@ -1,18 +1,13 @@
 """Punto de entrada del programa.
 
 Uso:
-    uv run python -m src [--input <input_file>] [--output <output_file>]
+    uv run python -m src [--functions_definition <file>]
+                         [--input <input_file>] [--output <output_file>]
 
 Por defecto:
+    - definiciones:         data/input/functions_definition.json
     - prompts:              data/input/function_calling_tests.json
-    - definiciones:         data/input/function_definitions.json
     - salida:               data/output/function_calling_results.json
-
---input y --output permiten sobreescribir, respectivamente, la ruta
-del archivo de prompts y la ruta del archivo de salida (según el
-ejemplo de uso del enunciado). La ruta de las definiciones de función
-no es configurable por CLI: siempre se lee de data/input/, tal como
-describe la sección V.2 del enunciado.
 """
 
 from __future__ import annotations
@@ -36,7 +31,7 @@ from src.llm_client import LLMClient
 from src.models import FunctionCallResult
 
 DEFAULT_TESTS_PATH = Path("data/input/function_calling_tests.json")
-DEFAULT_DEFINITIONS_PATH = Path("data/input/function_definitions.json")
+DEFAULT_DEFINITIONS_PATH = Path("data/input/functions_definition.json")
 DEFAULT_OUTPUT_PATH = Path("data/output/function_calling_results.json")
 
 
@@ -47,6 +42,15 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         description=(
             "Traduce prompts en lenguaje natural a llamadas a función "
             "estructuradas usando decodificación restringida."
+        ),
+    )
+    parser.add_argument(
+        "--functions_definition",
+        type=Path,
+        default=DEFAULT_DEFINITIONS_PATH,
+        help=(
+            "Ruta al archivo JSON de definiciones de función "
+            f"(por defecto: {DEFAULT_DEFINITIONS_PATH})"
         ),
     )
     parser.add_argument(
@@ -84,10 +88,10 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         prompts = load_prompts(args.input)
-        definitions = load_function_definitions(DEFAULT_DEFINITIONS_PATH)
+        definitions = load_function_definitions(args.functions_definition)
     except InputLoadError as exc:
-        print("Error al cargar los "
-              f"archivos de entrada: {exc}", file=sys.stderr)
+        print(f"Error al cargar los archivos de entrada: {exc}",
+              file=sys.stderr)
         return 1
 
     if not prompts:
@@ -116,8 +120,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         except FunctionCallGenerationError as exc:
             failed += 1
-            print(f"[{i}/{len(prompts)}] FALLO en {prompt!r}: {exc}",
-                  file=sys.stderr)
+            print(
+                f"[{i}/{len(prompts)}] FALLO en "
+                f"{prompt!r}: {exc}", file=sys.stderr)
         except Exception as exc:
             failed += 1
             print(
