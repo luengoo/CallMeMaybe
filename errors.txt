@@ -1,10 +1,11 @@
-diff /tmp/antes.json data/output/function_calling_results.json 
-65c65
-<       "regex": "([0-9]+)",
----
->       "regex": "34|233",
-75c75
-<       "replacement": "*****"
----
->       "replacement": " *"
-
+uv run flake8 . && \
+uv run mypy . --warn-return-any \
+--warn-unused-ignores --ignore-missing-imports \
+--disallow-untyped-defs --check-untyped-defs
+src/llm_client.py:7: error: Module "llm_sdk" has no attribute "Small_LLM_Model"  [attr-defined]
+src/llm_client.py:25: error: Returning Any from function declared to return "list[int]"  [no-any-return]
+src/llm_client.py:28: error: Returning Any from function declared to return "str"  [no-any-return]
+src/llm_client.py:31: error: Returning Any from function declared to return "list[float]"  [no-any-return]
+llm_sdk_stub/fake_llm.py:81: error: Function is missing a type annotation for one or more parameters  [no-untyped-def]
+Found 5 errors in 2 files (checked 10 source files)
+make: *** [Makefile:41: lint] Error 1
