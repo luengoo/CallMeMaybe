@@ -1,7 +1,7 @@
 UV = uv
 INPUT_PATH = data/input/example.json
 OUTPUT_PATH = data/output/function_calling_results.json
-SGOINFRE ?= ~/sgoinfre/students/alluengo
+SGOINFRE ?= /sgoinfre/students/alluengo
 STORE := $(SGOINFRE)/call_me_maybe
 
 export UV_PROJECT_ENVIROMENT := $(STORE)/.venv
