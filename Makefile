@@ -36,6 +36,7 @@ clean:
 
 fclean: clean
 	rm -rf .venv $(STORE)
+	rm -rf ~/.cache/uv
 
 lint:
 	$(UV) run flake8 . && \
