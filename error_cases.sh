@@ -7,7 +7,23 @@
 # Parte 2: prompts límite con el modelo real (tarda ~1 min). Revisa a ojo
 #          los valores generados.
 
+# Usa las mismas variables de entorno que el Makefile (venv en sgoinfre).
+# Sin esto, `uv run` crearía un .venv nuevo dentro del proyecto.
+if [ -z "${UV_PROJECT_ENVIRONMENT:-}" ] && [ -f Makefile ]; then
+    eval "$(make -s env)"
+fi
+
 PY=${PY:-uv run python}
+
+# Comprobación previa: si el entorno no funciona, no tiene sentido seguir
+# (evita dar por buenos casos que en realidad no han llegado a ejecutarse).
+if ! $PY -c "import src.io_utils" >/dev/null 2>&1; then
+    echo "ERROR: el entorno no arranca. Salida de la comprobación:"
+    $PY -c "import src.io_utils" 2>&1 | tail -5
+    echo "Revisa 'make -s env' y ejecuta 'make install' antes de este script."
+    exit 99
+fi
+
 T=$(mktemp -d)
 trap 'chmod -R u+w "$T"; rm -rf "$T"' EXIT
 FAILS=0
