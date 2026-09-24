@@ -1,4 +1,129 @@
-make -s env >> ~/.zshrc
+bash tests/error_cases.sh 
+== Parte 1: entradas malformadas ==
+[ok]    input inexistente (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/no_existe.json: el archivo no existe
+[ok]    input JSON roto (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/roto.json: JSON inválido (Expecting value: line 2 column 1 (char 13))
+[ok]    input lista vacía (exit 0)
+        No hay prompts que procesar. Nada que hacer.
+[ok]    input 0 bytes (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/cero_bytes.json: JSON inválido (Expecting value: line 1 column 1 (char 0))
+[ok]    input objeto, no array (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/objeto.json: se esperaba un array JSON de prompts, se encontró dict
+[ok]    input sin clave prompt (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/sin_clave.json: el elemento en la posición 0 no es un string ni un objeto con clave "prompt" válida: {'texto': 'hola'}
+[ok]    input prompt no string (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/numero.json: el elemento en la posición 0 no es un string ni un objeto con clave "prompt" válida: 123
+[ok]    input no UTF-8 (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/binario.json: el archivo no es texto UTF-8 (invalid start byte)
+[ok]    input es un directorio (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/directorio.json: error al leer el archivo ([Errno 21] Is a directory: '/tmp/tmp.4bRGfM777z/directorio.json')
+[ok]    defs inexistente (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/no_existe.json: el archivo no existe
+[ok]    defs tipo no soportado (exit 1)
+            For further information visit https://errors.pydantic.dev/2.13/v/literal_error
+[ok]    defs incompleta (exit 1)
+            For further information visit https://errors.pydantic.dev/2.13/v/missing
+[ok]    defs lista vacía (exit 1)
+        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/vacio.json: no se encontró ninguna función definida
+[ok]    argumento desconocido (exit 2)
+        python -m src: error: unrecognized arguments: --foo
+[ok]    output es un directorio (exit 1)
+        Error al guardar los resultados: /tmp/tmp.4bRGfM777z/directorio.json: no se pudo escribir el resultado ([Errno 21] Is a directory: '/tmp/tmp.4bRGfM777z/directorio.json')
+[ok]    output sin permisos (exit 1)
+        Error al guardar los resultados: /tmp/tmp.4bRGfM777z/solo_lectura/sub/out.json: no se pudo escribir el resultado ([Errno 13] Permission denied: '/tmp/tmp.4bRGfM777z/solo_lectura/sub')
 
-rm -rf ~/Desktop/CallMeMaybe/.venv
-df -h ~
+== Parte 2: prompts límite (modelo real) ==
+Cargando el modelo LLM (esto puede tardar un poco)...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████| 311/311 [00:03<00:00, 89.92it/s]
+[1/10] OK: 'What is the sum of 123456789 and 987654321?' -> fn_add_numbers
+[2/10] OK: 'Add 3.5 and -2' -> fn_add_numbers
+[3/10] OK: 'What is the square root of 0?' -> fn_get_square_root
+[4/10] OK: 'Greet Zoë' -> fn_greet
+[5/10] OK: 'Reverse the string \'He said "hi"\'' -> fn_reverse_string
+[6/10] OK: "Reverse the string ''" -> fn_reverse_string
+[7/10] OK: "Reverse the string 'The quick brown fox jumps over the lazy dog while the cat watches from the old wooden fence'" -> fn_reverse_string
+[8/10] OK: "Replace all digits in 'a1b2c3' with X" -> fn_substitute_string_with_regex
+[9/10] OK: 'Say hello to Maria' -> fn_greet
+[10/10] OK: 'add numbers 7 8' -> fn_add_numbers
+
+Completado en 82.7s. 10 OK, 0 fallidos, de 10 prompts. Resultado en /tmp/tmp.4bRGfM777z/limite_out.json
+[
+  {
+    "prompt": "What is the sum of 123456789 and 987654321?",
+    "name": "fn_add_numbers",
+    "parameters": {
+      "a": 123456789.0,
+      "b": 987654321.0
+    }
+  },
+  {
+    "prompt": "Add 3.5 and -2",
+    "name": "fn_add_numbers",
+    "parameters": {
+      "a": 3.5,
+      "b": 2.0
+    }
+  },
+  {
+    "prompt": "What is the square root of 0?",
+    "name": "fn_get_square_root",
+    "parameters": {
+      "a": 0.0
+    }
+  },
+  {
+    "prompt": "Greet Zoë",
+    "name": "fn_greet",
+    "parameters": {
+      "name": "Zoë"
+    }
+  },
+  {
+    "prompt": "Reverse the string 'He said \"hi\"'",
+    "name": "fn_reverse_string",
+    "parameters": {
+      "s": "He said "
+    }
+  },
+  {
+    "prompt": "Reverse the string ''",
+    "name": "fn_reverse_string",
+    "parameters": {
+      "s": "''"
+    }
+  },
+  {
+    "prompt": "Reverse the string 'The quick brown fox jumps over the lazy dog while the cat watches from the old wooden fence'",
+    "name": "fn_reverse_string",
+    "parameters": {
+      "s": "The quick brown fox jumps over the lazy dog while the cat watches from the old wooden fence"
+    }
+  },
+  {
+    "prompt": "Replace all digits in 'a1b2c3' with X",
+    "name": "fn_substitute_string_with_regex",
+    "parameters": {
+      "source_string": "a1b2c3",
+      "regex": "(\\d+)",
+      "replacement": "X"
+    }
+  },
+  {
+    "prompt": "Say hello to Maria",
+    "name": "fn_greet",
+    "parameters": {
+      "name": "Maria"
+    }
+  },
+  {
+    "prompt": "add numbers 7 8",
+    "name": "fn_add_numbers",
+    "parameters": {
+      "a": 7.0,
+      "b": 8.0
+    }
+  }
+]
+Todo correcto: ningún caso terminó en traceback.
