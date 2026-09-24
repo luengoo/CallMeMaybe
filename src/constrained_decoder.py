@@ -61,12 +61,25 @@ def choose_from_candidates(
         f"Texto generado hasta ahora: '{generated}'"
     )
 
+
+# --------------------------------------------------------------------------
+# Generación de valores libres: number y string.
+#
+# A diferencia de choose_from_candidates, aquí no hay una lista cerrada
+# de opciones válidas. Usamos el mismo patrón (pedir logits -> decidir
+# qué tokens son válidos -> elegir -> repetir) pero con una gramática
+# character-level en vez de una lista de strings completos.
+# --------------------------------------------------------------------------
+
 _DIGITS = set("0123456789")
 
 _NUMBER_RE = re.compile(r"^-?\d+(\.\d+)?$")
 
 
 def _number_state(text: str) -> tuple[set[str], bool]:
+    """Dado el texto de un número generado hasta ahora, devuelve
+    (conjunto de próximos caracteres válidos, si el texto ya es un
+    número JSON completo y válido por sí mismo)."""
     if text == "":
         return ({"-"} | _DIGITS, False)
     if text == "-":
@@ -76,16 +89,21 @@ def _number_state(text: str) -> tuple[set[str], bool]:
 
     if "." not in body:
         if body == "0":
+            # evitamos ceros a la izquierda tipo "007": tras un "0"
+            # solo se permite pasar a la parte decimal.
             return ({"."}, True)
         return (_DIGITS | {"."}, True)
 
     int_part, frac_part = body.split(".", 1)
     if frac_part == "":
+        # acabamos de poner el punto, hace falta al menos un dígito
         return (_DIGITS, False)
     return (_DIGITS, True)
 
 
 def _is_valid_number_continuation(text: str, addition: str) -> bool:
+    """¿Sigue siendo un prefijo válido de número si añadimos `addition`
+    (posiblemente varios caracteres, como haría un token BPE) a `text`?"""
     if addition == "":
         return False
     current = text
@@ -100,8 +118,25 @@ def _is_valid_number_continuation(text: str, addition: str) -> bool:
 def generate_number(
     llm: LLMClientLike,
     prompt_ids: list[int],
-    max_extra_tokens: int = 15,
+    max_extra_tokens: int = 50,
 ) -> float:
+    """Genera un número JSON (int o decimal) token a token.
+
+    Mientras el texto acumulado todavía no es un número válido por sí
+    mismo (p. ej. "-", o "3."), se fuerza una continuación válida
+    (enmascarado duro, igual que choose_from_candidates). En cuanto el
+    texto ya ES un número válido, se deja que el modelo decida
+    libremente si quiere seguir extendiéndolo o parar: si su elección
+    natural (sin restringir) ya no encaja en la gramática de números,
+    interpretamos eso como la señal de que ha terminado.
+
+    Returns:
+        El número generado, ya convertido a float.
+
+    Raises:
+        ValueError: si se alcanza max_extra_tokens sin producir un
+            número válido completo.
+    """
     generated = ""
     current_ids = list(prompt_ids)
 
@@ -116,7 +151,7 @@ def generate_number(
                 current_ids.append(best_id)
                 generated += best_text
                 continue
-            break
+            break  # el modelo prefiere algo fuera de la gramática -> paramos
 
         allowed_mask = np.full(logits.shape, False)
         for token_id, token_str in llm.id_to_str.items():
@@ -143,15 +178,30 @@ def generate_number(
 
     return float(generated)
 
+
+# Caracteres que pueden seguir a "\" dentro de un string JSON.
+# (Dejamos fuera \uXXXX para no tener que validar 4 dígitos hex.)
 _SIMPLE_ESCAPES = set('"\\/bfnrt')
 
 
 def _consume_string_token(
     raw: str, escaping: bool, token: str
 ) -> tuple[str, bool, bool]:
+    """Añade `token` al contenido crudo (todavía escapado) de un string
+    JSON, carácter a carácter.
+
+    Returns:
+        (nuevo contenido crudo, si queda un "\\" pendiente,
+         si el string ha terminado).
+    El string termina con una comilla sin escapar (cierre natural) o con
+    un carácter de control. Un escape inválido como "\\d" se trata como
+    una barra literal. Lo que venga en el token tras el cierre se descarta.
+    """
     for ch in token:
         if escaping:
             if ch not in _SIMPLE_ESCAPES:
+                # El modelo escribió p. ej. "\d" (escape JSON inválido):
+                # lo interpretamos como una barra literal seguida de "d".
                 raw += "\\"
             raw += ch
             escaping = False
@@ -168,8 +218,24 @@ def _consume_string_token(
 def generate_string(
     llm: LLMClientLike,
     prompt_ids: list[int],
-    max_extra_tokens: int = 40,
+    max_extra_tokens: int = 200,
 ) -> str:
+    """Genera el CONTENIDO de un string JSON.
+
+    El prompt debe terminar YA con la comilla de apertura `"`: así el
+    modelo empieza directamente por el contenido y la siguiente comilla
+    que "quiera" escribir es la de cierre.
+
+    En cada paso tomamos el token más probable y lo recorremos carácter
+    a carácter respetando la gramática de strings JSON: se aceptan
+    escapes válidos (`\\\\`, `\\"`, `\\n`…), de modo que valores como la
+    regex `\\d+` se pueden generar. Una comilla sin escapar marca el
+    final. Al acabar se decodifica con json.loads, así que el valor
+    devuelto ya está "desescapado" y listo para meter en el resultado.
+
+    Returns:
+        El contenido del string (sin comillas, sin escapes JSON).
+    """
     raw = ""
     escaping = False
     current_ids = list(prompt_ids)
@@ -186,7 +252,7 @@ def generate_string(
             break
         current_ids.append(best_id)
 
-    if escaping:
+    if escaping:  # se acabaron los tokens a mitad de un escape
         raw = raw[:-1]
 
     result = json.loads(f'"{raw}"')

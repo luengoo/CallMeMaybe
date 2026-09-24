@@ -1,3 +1,15 @@
+"""Punto de entrada del programa.
+
+Uso:
+    uv run python -m src [--functions_definition <file>]
+                         [--input <input_file>] [--output <output_file>]
+
+Por defecto:
+    - definiciones:         data/input/functions_definition.json
+    - prompts:              data/input/function_calling_tests.json
+    - salida:               data/output/function_calling_results.json
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -11,6 +23,7 @@ from src.function_call_generator import (
 )
 from src.io_utils import (
     InputLoadError,
+    OutputWriteError,
     load_function_definitions,
     load_prompts,
     write_results,
@@ -24,6 +37,7 @@ DEFAULT_OUTPUT_PATH = Path("data/output/function_calling_results.json")
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
+    """Define y parsea los argumentos de línea de comandos."""
     parser = argparse.ArgumentParser(
         prog="python -m src",
         description=(
@@ -62,6 +76,15 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Ejecuta el programa completo.
+
+    Returns:
+        Código de salida: 0 si todo fue bien, distinto de 0 si algo
+        impidió generar cualquier resultado (errores de entrada,
+        fallo al cargar el modelo). Los fallos en prompts individuales
+        NO detienen el programa: se registran y se continúa con el
+        resto.
+    """
     args = _parse_args(sys.argv[1:] if argv is None else argv)
 
     try:
@@ -117,7 +140,11 @@ def main(argv: list[str] | None = None) -> int:
 
     elapsed = time.monotonic() - start
 
-    write_results(args.output, [r.model_dump() for r in results])
+    try:
+        write_results(args.output, [r.model_dump() for r in results])
+    except OutputWriteError as exc:
+        print(f"Error al guardar los resultados: {exc}", file=sys.stderr)
+        return 1
 
     print(
         f"\nCompletado en {elapsed:.1f}s. "

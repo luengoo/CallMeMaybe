@@ -12,6 +12,10 @@ class InputLoadError(Exception):
     """Error controlado al cargar un archivo de entrada."""
 
 
+class OutputWriteError(Exception):
+    """Error controlado al escribir el archivo de salida."""
+
+
 def load_prompts(path: Path) -> list[str]:
     """Carga la lista de prompts en lenguaje natural.
 
@@ -98,10 +102,19 @@ def write_results(path: Path, results: list[dict[str, object]]) -> None:
     Args:
         path: Ruta de salida, p. ej. data/output/function_calling_results.json.
         results: Lista de diccionarios ya serializables a JSON.
+
+    Raises:
+        OutputWriteError: si no se puede crear o escribir el archivo
+            (la ruta es un directorio, faltan permisos, disco lleno...).
     """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+    except OSError as exc:
+        raise OutputWriteError(
+            f"{path}: no se pudo escribir el resultado ({exc})"
+        ) from exc
 
 
 def _read_json(path: Path) -> object:
@@ -114,6 +127,10 @@ def _read_json(path: Path) -> object:
             return json.load(f)
     except json.JSONDecodeError as exc:
         raise InputLoadError(f"{path}: JSON inválido ({exc})") from exc
+    except UnicodeDecodeError as exc:
+        raise InputLoadError(
+            f"{path}: el archivo no es texto UTF-8 ({exc.reason})"
+        ) from exc
     except OSError as exc:
         raise InputLoadError(
             f"{path}: error al leer el archivo ({exc})"
