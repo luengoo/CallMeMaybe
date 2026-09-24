@@ -13,7 +13,12 @@ dependencies = [
 llm-sdk = { path = "llm_sdk" }
 
 [tool.mypy]
-exclude = ["llm_sdk/", ".venv/"]
+mypy_path = "llm_sdk"
+exclude = ["^llm_sdk/", "^\\.venv/"]
+
+[[tool.mypy.overrides]]
+module = ["llm_sdk", "llm_sdk.*"]
+follow_imports = "silent"
 
 [build-system]
 requires = ["hatchling"]

@@ -78,7 +78,7 @@ class Small_LLM_Model:
                 raise ValueError(f"No se pudo tokenizar en la posición {i}")
         return _FakeTensor([ids])
 
-    def decode(self, ids) -> str:
+    def decode(self, ids: "_FakeTensor | list[int]") -> str:
         if hasattr(ids, "tolist"):
             ids = ids.tolist()
         return "".join(_TOKEN_TEXTS[i] for i in ids)
