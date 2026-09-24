@@ -1,4 +1,5 @@
+make run
 uv run python -m src --input data/input/function_calling_tests.json --output data/output/function_calling_results.json
-/sgoinfre/students/alluengo/call_me_maybe/.venv/bin/python: No module named src.__main__; 'src' is a package and cannot be directly executed
+Error al cargar los archivos de entrada: data/input/function_definitions.json: el archivo no existe
 make: *** [Makefile:27: run] Error 1
 
