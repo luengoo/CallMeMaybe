@@ -90,19 +90,25 @@ def main(argv: list[str] | None = None) -> int:
         prompts = load_prompts(args.input)
         definitions = load_function_definitions(args.functions_definition)
     except InputLoadError as exc:
-        print(f"Error al cargar los archivos de entrada: {exc}",
-              file=sys.stderr)
+        print(
+            f"Error al cargar los archivos de entrada: {exc}",
+            file=sys.stderr,
+        )
         return 1
 
     if not prompts:
-        print("No hay prompts que procesar. Nada que hacer.", file=sys.stderr)
+        print(
+            "No hay prompts que procesar. Nada que hacer.", file=sys.stderr
+        )
         return 0
 
-    print("Cargando el modelo LLM (esto puede tardar un poco)...",
-          file=sys.stderr)
+    print(
+        "Cargando el modelo LLM (esto puede tardar un poco)...",
+        file=sys.stderr,
+    )
     try:
         llm = LLMClient()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - fallo de carga = fatal
         print(f"Error al cargar el modelo LLM: {exc}", file=sys.stderr)
         return 1
 
@@ -115,15 +121,16 @@ def main(argv: list[str] | None = None) -> int:
             result = generate_function_call(llm, prompt, definitions)
             results.append(result)
             print(
-                f"[{i}/{len(prompts)}] OK: {prompt!r} -> {result.fn_name}",
+                f"[{i}/{len(prompts)}] OK: {prompt!r} -> {result.name}",
                 file=sys.stderr,
             )
         except FunctionCallGenerationError as exc:
             failed += 1
             print(
-                f"[{i}/{len(prompts)}] FALLO en "
-                f"{prompt!r}: {exc}", file=sys.stderr)
-        except Exception as exc:
+                f"[{i}/{len(prompts)}] FALLO en {prompt!r}: {exc}",
+                file=sys.stderr,
+            )
+        except Exception as exc:  # noqa: BLE001 - nunca debe crashear
             failed += 1
             print(
                 f"[{i}/{len(prompts)}] ERROR INESPERADO en {prompt!r}: {exc}",

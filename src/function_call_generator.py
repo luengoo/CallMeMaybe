@@ -52,7 +52,7 @@ def _build_context_prompt(
     return (
         f"{functions_block}\n\n"
         f'User request: "{user_prompt}"\n\n'
-        "Respond with a single JSON object with keys fn_name and args, "
+        "Respond with a single JSON object with keys name and parameters, "
         "choosing the correct function and arguments for the request.\n"
     )
 
@@ -71,7 +71,7 @@ def generate_function_call(
         definitions: las funciones disponibles entre las que elegir.
 
     Returns:
-        Un FunctionCallResult con fn_name y args ya rellenos.
+        Un FunctionCallResult con name y parameters ya rellenos.
 
     Raises:
         FunctionCallGenerationError: si algo falla durante la
@@ -83,7 +83,7 @@ def generate_function_call(
             "No hay definiciones de función disponibles"
         )
 
-    text = _build_context_prompt(prompt, definitions) + '{"fn_name": "'
+    text = _build_context_prompt(prompt, definitions) + '{"name": "'
 
     try:
         fn_name_ids = llm.encode(text)
@@ -102,13 +102,17 @@ def generate_function_call(
             f"las definiciones disponibles"
         )
 
-    text += fn_name + '", "args": {'
+    text += fn_name + '", "parameters": {'
 
     args: dict[str, object] = {}
     param_items = list(fn_def.parameters.items())
 
     for i, (param_name, param_spec) in enumerate(param_items):
         text += f'"{param_name}": '
+        if param_spec.type == "string":
+            # La comilla de apertura la ponemos nosotros: así el modelo
+            # empieza directamente por el contenido del string.
+            text += '"'
 
         try:
             value_ids = llm.encode(text)
@@ -136,10 +140,12 @@ def generate_function_call(
         # json.dumps nos da la representación JSON correcta del valor
         # (comillas para strings, true/false para booleanos, etc.) sin
         # tener que reconstruirla a mano.
-        text += json.dumps(value)
+        encoded = json.dumps(value)
+        # Para strings la comilla de apertura ya está en `text`.
+        text += encoded[1:] if param_spec.type == "string" else encoded
         if i < len(param_items) - 1:
             text += ", "
 
     text += "}}"
 
-    return FunctionCallResult(prompt=prompt, fn_name=fn_name, args=args)
+    return FunctionCallResult(prompt=prompt, name=fn_name, parameters=args)

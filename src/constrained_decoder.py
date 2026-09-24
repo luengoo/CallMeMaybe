@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from typing import Protocol
 
@@ -178,20 +179,40 @@ def generate_number(
     return float(generated)
 
 
-_UNSAFE_STRING_CHARS = {'"', "\\"}
+# Caracteres que pueden seguir a "\" dentro de un string JSON.
+# (Dejamos fuera \uXXXX para no tener que validar 4 dígitos hex.)
+_SIMPLE_ESCAPES = set('"\\/bfnrt')
 
 
-def _is_valid_string_token(token_str: str) -> bool:
-    """Un token es válido como contenido de string si no puede romper
-    el JSON: sin comillas sin escapar, sin backslash, sin caracteres
-    de control (saltos de línea, tabs, etc.)."""
-    if token_str == "":
-        return False
-    if any(ch in _UNSAFE_STRING_CHARS for ch in token_str):
-        return False
-    if any(ord(ch) < 0x20 for ch in token_str):
-        return False
-    return True
+def _consume_string_token(
+    raw: str, escaping: bool, token: str
+) -> tuple[str, bool, bool]:
+    """Añade `token` al contenido crudo (todavía escapado) de un string
+    JSON, carácter a carácter.
+
+    Returns:
+        (nuevo contenido crudo, si queda un "\\" pendiente,
+         si el string ha terminado).
+    El string termina con una comilla sin escapar (cierre natural) o con
+    un carácter de control. Un escape inválido como "\\d" se trata como
+    una barra literal. Lo que venga en el token tras el cierre se descarta.
+    """
+    for ch in token:
+        if escaping:
+            if ch not in _SIMPLE_ESCAPES:
+                # El modelo escribió p. ej. "\d" (escape JSON inválido):
+                # lo interpretamos como una barra literal seguida de "d".
+                raw += "\\"
+            raw += ch
+            escaping = False
+        elif ch == '"':
+            return raw, False, True
+        elif ord(ch) < 0x20:
+            return raw, False, True
+        else:
+            raw += ch
+            escaping = ch == "\\"
+    return raw, escaping, False
 
 
 def generate_string(
@@ -199,33 +220,41 @@ def generate_string(
     prompt_ids: list[int],
     max_extra_tokens: int = 40,
 ) -> str:
-    """Genera el CONTENIDO de un string JSON (sin las comillas, que
-    las pone quien orqueste el JSON completo alrededor).
+    """Genera el CONTENIDO de un string JSON.
 
-    Un string puede terminar en cualquier momento (incluso vacío), así
-    que no hay un "estado no terminal" que forzar como en los números:
-    en cada paso dejamos que el modelo elija libremente (sin máscara).
-    Si su elección natural es seguro para JSON (no contiene comillas,
-    backslash ni caracteres de control), la aceptamos y seguimos. En
-    cuanto el modelo "quiere" producir algo inseguro -típicamente la
-    comilla de cierre-, lo tomamos como señal de que el string ha
-    terminado y paramos ahí, sin consumir ese token.
+    El prompt debe terminar YA con la comilla de apertura `"`: así el
+    modelo empieza directamente por el contenido y la siguiente comilla
+    que "quiera" escribir es la de cierre.
+
+    En cada paso tomamos el token más probable y lo recorremos carácter
+    a carácter respetando la gramática de strings JSON: se aceptan
+    escapes válidos (`\\\\`, `\\"`, `\\n`…), de modo que valores como la
+    regex `\\d+` se pueden generar. Una comilla sin escapar marca el
+    final. Al acabar se decodifica con json.loads, así que el valor
+    devuelto ya está "desescapado" y listo para meter en el resultado.
 
     Returns:
-        El contenido del string (sin comillas).
+        El contenido del string (sin comillas, sin escapes JSON).
     """
-    generated = ""
+    raw = ""
+    escaping = False
     current_ids = list(prompt_ids)
 
     for _ in range(max_extra_tokens):
         logits = np.asarray(llm.next_token_logits(current_ids))
         best_id = int(np.argmax(logits))
-        best_text = llm.id_to_str.get(best_id, "")
-
-        if not _is_valid_string_token(best_text):
+        token = llm.id_to_str.get(best_id, "")
+        if token == "":
             break
 
+        raw, escaping, finished = _consume_string_token(raw, escaping, token)
+        if finished:
+            break
         current_ids.append(best_id)
-        generated += best_text
 
-    return generated
+    if escaping:  # se acabaron los tokens a mitad de un escape
+        raw = raw[:-1]
+
+    result = json.loads(f'"{raw}"')
+    assert isinstance(result, str)
+    return result

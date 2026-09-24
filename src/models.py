@@ -1,7 +1,7 @@
 """Modelos pydantic que representan el esquema del proyecto.
 
 Estos modelos cumplen dos papeles:
-1. Validar los archivos de entrada (function_definitions.json).
+1. Validar los archivos de entrada (functions_definition.json).
 2. Servir de "fuente de verdad" para construir la máquina de estados
    de decodificación restringida (sabemos qué claves y tipos esperar
    sin tener que volver a parsear JSON crudo en cada paso).
@@ -49,5 +49,5 @@ class FunctionCallResult(BaseModel):
     """Una entrada del archivo de salida function_calling_results.json."""
 
     prompt: str
-    fn_name: str
-    args: dict[str, object]
+    name: str
+    parameters: dict[str, object]

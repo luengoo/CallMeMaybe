@@ -116,4 +116,5 @@ def _read_json(path: Path) -> object:
         raise InputLoadError(f"{path}: JSON inválido ({exc})") from exc
     except OSError as exc:
         raise InputLoadError(
-            f"{path}: error al leer el archivo ({exc})") from exc
+            f"{path}: error al leer el archivo ({exc})"
+        ) from exc
