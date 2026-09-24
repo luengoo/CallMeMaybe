@@ -1,5 +1,29 @@
 make run
-uv run python -m src --input data/input/function_calling_tests.json --output data/output/function_calling_results.json
-Error al cargar los archivos de entrada: data/input/function_definitions.json: el archivo no existe
-make: *** [Makefile:27: run] Error 1
+uv run python -m src --input data/input/function_calling_tests.json --output data/output/make run
+uv run python -m src --functions_definition data/input/functions_definition.json --input data/input/function_calling_tests.json --output data/output/function_calling_results.json
+Cargando el modelo LLM (esto puede tardar un poco)...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+config.json: 100%|██████████████████████████████████████████████████████████████████████████| 726/726 [00:00<00:00, 2.02MB/s]
+tokenizer_config.json: 100%|████████████████████████████████████████████████████████████| 9.73k/9.73k [00:00<00:00, 31.9MB/s]
+vocab.json: 100%|███████████████████████████████████████████████████████████████████████| 2.78M/2.78M [00:00<00:00, 89.6MB/s]
+merges.txt: 100%|████████████████████████████████████████████████████████████████████████| 1.67M/1.67M [00:00<00:00, 121MB/s]
+tokenizer.json: downloading bytes: ██████████████████████████████████████████████████████████████████████| 3.40MB,  331kB/s  
+tokenizer.json: reconstructing file: 100%|██████████████████████████████████████████████████████| 11.4MB / 11.4MB, 1.12MB/s  
+model.safetensors: downloading bytes: ███████████████████████████████████████████████████████████████████| 1.26GB, 57.0MB/s  
+model.safetensors: reconstructing file: 100%|███████████████████████████████████████████████████| 1.50GB / 1.50GB, 74.1MB/s  
+Loading weights: 100%|█████████████████████████████████████████████████████████████████████| 311/311 [00:15<00:00, 19.56it/s]
+generation_config.json: 100%|████████████████████████████████████████████████████████████████| 239/239 [00:00<00:00, 820kB/s]
+[1/11] OK: 'What is the sum of 2 and 3?' -> fn_add_numbers
+[2/11] OK: 'What is the sum of 265 and 345?' -> fn_add_numbers
+[3/11] OK: 'Greet shrek' -> fn_greet
+[4/11] OK: 'Greet john' -> fn_greet
+[5/11] OK: "Reverse the string 'hello'" -> fn_reverse_string
+[6/11] OK: "Reverse the string 'world'" -> fn_reverse_string
+[7/11] OK: 'What is the square root of 16?' -> fn_get_square_root
+[8/11] OK: 'Calculate the square root of 144' -> fn_get_square_root
+[9/11] OK: 'Replace all numbers in "Hello 34 I\'m 233 years old" with NUMBERS' -> fn_substitute_string_with_regex
+[10/11] OK: "Replace all vowels in 'Programming is fun' with asterisks" -> fn_substitute_string_with_regex
+[11/11] OK: "Substitute the word 'cat' with 'dog' in 'The cat sat on the mat with another cat'" -> fn_substitute_string_with_regex
+
+Completado en 66.9s. 11 OK, 0 fallidos, de 11 prompts. Resultado en data/output/function_calling_results.json
 
