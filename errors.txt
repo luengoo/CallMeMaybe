@@ -1,5 +1,4 @@
-rm -rf ~/.local/share/Trash/*          # la papelera (lo más típico)
-rm -rf ~/.local/share/uv               # Pythons/herramientas de uv; ahora irán a sgoinfre
-rm -rf ~/.config/Code/Cache ~/.config/Code/CachedData ~/.config/Code/logs
-rm -rf ~/.config/google-chrome/Default/Service\ Worker/CacheStorage
-rm -rf ~/snap/*/common/.cache
+uv run python -m src --input data/input/function_calling_tests.json --output data/output/function_calling_results.json
+/sgoinfre/students/alluengo/call_me_maybe/.venv/bin/python: No module named src.__main__; 'src' is a package and cannot be directly executed
+make: *** [Makefile:27: run] Error 1
+
