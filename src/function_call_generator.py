@@ -35,25 +35,67 @@ class FunctionCallGenerationError(Exception):
     """Error controlado al generar una llamada a función para un prompt."""
 
 
+def _tool_schema(d: FunctionDefinition) -> str:
+    """Serializa una definición al formato JSON Schema de "tools" que
+    usan los modelos de chat con function calling (incluido Qwen3)."""
+    schema = {
+        "type": "function",
+        "function": {
+            "name": d.name,
+            "description": d.description,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    name: {"type": spec.type}
+                    for name, spec in d.parameters.items()
+                },
+                "required": list(d.parameters),
+            },
+        },
+    }
+    return json.dumps(schema, ensure_ascii=False)
+
+
 def _build_context_prompt(
     user_prompt: str, definitions: list[FunctionDefinition]
 ) -> str:
-    """Construye el texto que le da al modelo el contexto necesario:
-    qué funciones existen y qué se le pide. Termina justo antes de
-    donde el modelo debe empezar a rellenar el JSON."""
-    lines = ["Available functions:"]
-    for d in definitions:
-        params_desc = ", ".join(
-            f"{name}: {spec.type}" for name, spec in d.parameters.items()
-        )
-        lines.append(f"- {d.name}({params_desc}): {d.description}")
-    functions_block = "\n".join(lines)
+    """Construye el prompt con la plantilla de chat de Qwen3 para tools.
 
+    Qwen3 es un modelo de chat entrenado para hacer function calling con
+    un formato concreto: las funciones van como JSON Schema dentro de
+    <tools>...</tools> en el mensaje de sistema, y la respuesta del
+    asistente es un objeto {"name": ..., "arguments": ...} dentro de
+    <tool_call>...</tool_call>. Presentarle la tarea en el mismo formato
+    que vio en su entrenamiento le ayuda a interpretar mejor cualquier
+    petición. El bloque vacío <think></think> equivale a desactivar el
+    modo de razonamiento (enable_thinking=False en la plantilla oficial).
+
+    La decodificación restringida sigue siendo la que garantiza la
+    estructura: esto solo mejora la calidad de las elecciones del
+    modelo dentro de lo que la gramática permite.
+
+    El texto devuelto termina justo donde el modelo debe escribir el
+    nombre de la función (tras '{"name": "').
+    """
+    tools = "\n".join(_tool_schema(d) for d in definitions)
     return (
-        f"{functions_block}\n\n"
-        f'User request: "{user_prompt}"\n\n'
-        "Respond with a single JSON object with keys name and parameters, "
-        "choosing the correct function and arguments for the request.\n"
+        "<|im_start|>system\n"
+        "# Tools\n\n"
+        "You may call one or more functions to assist with the user "
+        "query.\n\n"
+        "You are provided with function signatures within <tools></tools> "
+        "XML tags:\n"
+        f"<tools>\n{tools}\n</tools>\n\n"
+        "For each function call, return a json object with function name "
+        "and arguments within <tool_call></tool_call> XML tags:\n"
+        "<tool_call>\n"
+        '{"name": <function-name>, "arguments": <args-json-object>}\n'
+        "</tool_call><|im_end|>\n"
+        f"<|im_start|>user\n{user_prompt}<|im_end|>\n"
+        "<|im_start|>assistant\n"
+        "<think>\n\n</think>\n\n"
+        "<tool_call>\n"
+        '{"name": "'
     )
 
 
@@ -83,7 +125,7 @@ def generate_function_call(
             "No hay definiciones de función disponibles"
         )
 
-    text = _build_context_prompt(prompt, definitions) + '{"name": "'
+    text = _build_context_prompt(prompt, definitions)
 
     try:
         fn_name_ids = llm.encode(text)
@@ -102,7 +144,9 @@ def generate_function_call(
             f"las definiciones disponibles"
         )
 
-    text += fn_name + '", "parameters": {'
+    # En el prompt usamos "arguments" (la clave del formato de Qwen3);
+    # en el fichero de salida la clave será "parameters".
+    text += fn_name + '", "arguments": {'
 
     args: dict[str, object] = {}
     param_items = list(fn_def.parameters.items())
