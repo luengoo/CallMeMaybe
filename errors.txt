@@ -1,5 +1,44 @@
-uv run flake8 . && uv run mypy . --strict
-llm_sdk_stub/fake_llm.py:31: error: Missing type arguments for generic type "list"  [type-arg]
-llm_sdk_stub/fake_llm.py:37: error: Missing type arguments for generic type "list"  [type-arg]
-Found 2 errors in 1 file (checked 10 source files)
-make: *** [Makefile:47: lint-strict] Error 1
+bash tests/error_cases.sh 
+== Parte 1: entradas malformadas ==
+[ok]    input inexistente (exit 2)
+                 space left on device (os error 28)
+[ok]    input JSON roto (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/typeshed/stdlib/.tmpMtJK03"
+[ok]    input lista vacía (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/typeshed/stdlib/.tmpOdpAmU"
+[ok]    input 0 bytes (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmpI6wxSq"
+[ok]    input objeto, no array (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmpzrqvPa"
+[ok]    input sin clave prompt (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmpSnHOiZ"
+[ok]    input prompt no string (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmpjprfhP"
+[ok]    input no UTF-8 (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmp4SKFcc"
+[ok]    input es un directorio (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmp2STjRp"
+[ok]    defs inexistente (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmp6dfjsz"
+[ok]    defs tipo no soportado (exit 2)
+                 error 28)
+[ok]    defs incompleta (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmp6A5vCe"
+[ok]    defs lista vacía (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmp1sBRVF"
+[ok]    argumento desconocido (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmpvjAo8U"
+[ok]    output es un directorio (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmpJEYtxZ"
+[ok]    output sin permisos (exit 2)
+                 "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/typeshed/stdlib/encodings/.tmporyJqb"
+
+== Parte 2: prompts límite (modelo real) ==
+error: Failed to install: mypy-2.3.1-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+       (mypy==2.3.1)
+  cause: Failed to copy to `/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/stubinfo.py`
+  cause: No space left on device (os error 28) at path
+         "/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/mypy/.tmpe2SNZI"
+[FALLO] la parte 2 terminó con error
+
+1 caso(s) con problemas (ver arriba).
