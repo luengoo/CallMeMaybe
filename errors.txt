@@ -1,42 +1,42 @@
 bash tests/error_cases.sh 
 == Parte 1: entradas malformadas ==
 [ok]    input inexistente (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/no_existe.json: el archivo no existe
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/no_existe.json: el archivo no existe
 [ok]    input JSON roto (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/roto.json: JSON inválido (Expecting value: line 2 column 1 (char 13))
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/roto.json: JSON inválido (Expecting value: line 2 column 1 (char 13))
 [ok]    input lista vacía (exit 0)
         No hay prompts que procesar. Nada que hacer.
 [ok]    input 0 bytes (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/cero_bytes.json: JSON inválido (Expecting value: line 1 column 1 (char 0))
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/cero_bytes.json: JSON inválido (Expecting value: line 1 column 1 (char 0))
 [ok]    input objeto, no array (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/objeto.json: se esperaba un array JSON de prompts, se encontró dict
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/objeto.json: se esperaba un array JSON de prompts, se encontró dict
 [ok]    input sin clave prompt (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/sin_clave.json: el elemento en la posición 0 no es un string ni un objeto con clave "prompt" válida: {'texto': 'hola'}
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/sin_clave.json: el elemento en la posición 0 no es un string ni un objeto con clave "prompt" válida: {'texto': 'hola'}
 [ok]    input prompt no string (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/numero.json: el elemento en la posición 0 no es un string ni un objeto con clave "prompt" válida: 123
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/numero.json: el elemento en la posición 0 no es un string ni un objeto con clave "prompt" válida: 123
 [ok]    input no UTF-8 (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/binario.json: el archivo no es texto UTF-8 (invalid start byte)
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/binario.json: el archivo no es texto UTF-8 (invalid start byte)
 [ok]    input es un directorio (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/directorio.json: error al leer el archivo ([Errno 21] Is a directory: '/tmp/tmp.4bRGfM777z/directorio.json')
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/directorio.json: error al leer el archivo ([Errno 21] Is a directory: '/tmp/tmp.j59d3gBiND/directorio.json')
 [ok]    defs inexistente (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/no_existe.json: el archivo no existe
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/no_existe.json: el archivo no existe
 [ok]    defs tipo no soportado (exit 1)
             For further information visit https://errors.pydantic.dev/2.13/v/literal_error
 [ok]    defs incompleta (exit 1)
             For further information visit https://errors.pydantic.dev/2.13/v/missing
 [ok]    defs lista vacía (exit 1)
-        Error al cargar los archivos de entrada: /tmp/tmp.4bRGfM777z/vacio.json: no se encontró ninguna función definida
+        Error al cargar los archivos de entrada: /tmp/tmp.j59d3gBiND/vacio.json: no se encontró ninguna función definida
 [ok]    argumento desconocido (exit 2)
         python -m src: error: unrecognized arguments: --foo
 [ok]    output es un directorio (exit 1)
-        Error al guardar los resultados: /tmp/tmp.4bRGfM777z/directorio.json: no se pudo escribir el resultado ([Errno 21] Is a directory: '/tmp/tmp.4bRGfM777z/directorio.json')
+        Error al guardar los resultados: /tmp/tmp.j59d3gBiND/directorio.json: no se pudo escribir el resultado ([Errno 21] Is a directory: '/tmp/tmp.j59d3gBiND/directorio.json')
 [ok]    output sin permisos (exit 1)
-        Error al guardar los resultados: /tmp/tmp.4bRGfM777z/solo_lectura/sub/out.json: no se pudo escribir el resultado ([Errno 13] Permission denied: '/tmp/tmp.4bRGfM777z/solo_lectura/sub')
+        Error al guardar los resultados: /tmp/tmp.j59d3gBiND/solo_lectura/sub/out.json: no se pudo escribir el resultado ([Errno 13] Permission denied: '/tmp/tmp.j59d3gBiND/solo_lectura/sub')
 
 == Parte 2: prompts límite (modelo real) ==
 Cargando el modelo LLM (esto puede tardar un poco)...
 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-Loading weights: 100%|█████████████████████████████████████████████████████████████████████| 311/311 [00:03<00:00, 89.92it/s]
+Loading weights: 100%|████████████████████████████████████████████████████████████████████| 311/311 [00:02<00:00, 147.42it/s]
 [1/10] OK: 'What is the sum of 123456789 and 987654321?' -> fn_add_numbers
 [2/10] OK: 'Add 3.5 and -2' -> fn_add_numbers
 [3/10] OK: 'What is the square root of 0?' -> fn_get_square_root
@@ -48,7 +48,7 @@ Loading weights: 100%|███████████████████�
 [9/10] OK: 'Say hello to Maria' -> fn_greet
 [10/10] OK: 'add numbers 7 8' -> fn_add_numbers
 
-Completado en 82.7s. 10 OK, 0 fallidos, de 10 prompts. Resultado en /tmp/tmp.4bRGfM777z/limite_out.json
+Completado en 84.9s. 10 OK, 0 fallidos, de 10 prompts. Resultado en /tmp/tmp.j59d3gBiND/limite_out.json
 [
   {
     "prompt": "What is the sum of 123456789 and 987654321?",
@@ -63,7 +63,7 @@ Completado en 82.7s. 10 OK, 0 fallidos, de 10 prompts. Resultado en /tmp/tmp.4bR
     "name": "fn_add_numbers",
     "parameters": {
       "a": 3.5,
-      "b": 2.0
+      "b": -2.0
     }
   },
   {
@@ -84,7 +84,7 @@ Completado en 82.7s. 10 OK, 0 fallidos, de 10 prompts. Resultado en /tmp/tmp.4bR
     "prompt": "Reverse the string 'He said \"hi\"'",
     "name": "fn_reverse_string",
     "parameters": {
-      "s": "He said "
+      "s": "He said \"hi"
     }
   },
   {
@@ -127,3 +127,22 @@ Completado en 82.7s. 10 OK, 0 fallidos, de 10 prompts. Resultado en /tmp/tmp.4bR
   }
 ]
 Todo correcto: ningún caso terminó en traceback.
+alluengo@c2r14s4 ~/Desktop/CallMeMaybe
+ % make run                 
+uv run python -m src --functions_definition data/input/functions_definition.json --input data/input/function_calling_tests.json --output data/output/function_calling_results.json
+Cargando el modelo LLM (esto puede tardar un poco)...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights: 100%|████████████████████████████████████████████████████████████████████| 311/311 [00:01<00:00, 235.27it/s]
+[1/11] OK: 'What is the sum of 2 and 3?' -> fn_add_numbers
+[2/11] OK: 'What is the sum of 265 and 345?' -> fn_add_numbers
+[3/11] OK: 'Greet shrek' -> fn_greet
+[4/11] OK: 'Greet john' -> fn_greet
+[5/11] OK: "Reverse the string 'hello'" -> fn_reverse_string
+[6/11] OK: "Reverse the string 'world'" -> fn_reverse_string
+[7/11] OK: 'What is the square root of 16?' -> fn_get_square_root
+[8/11] OK: 'Calculate the square root of 144' -> fn_get_square_root
+[9/11] OK: 'Replace all numbers in "Hello 34 I\'m 233 years old" with NUMBERS' -> fn_substitute_string_with_regex
+[10/11] OK: "Replace all vowels in 'Programming is fun' with asterisks" -> fn_substitute_string_with_regex
+[11/11] OK: "Substitute the word 'cat' with 'dog' in 'The cat sat on the mat with another cat'" -> fn_substitute_string_with_regex
+
+Completado en 97.2s. 11 OK, 0 fallidos, de 11 prompts. Resultado en data/output/function_calling_results.json
