@@ -1,14 +1,5 @@
-df -h
-Filesystem                                  Size  Used Avail Use% Mounted on
-tmpfs                                       782M  2.8M  779M   1% /run
-/dev/mapper/ubuntu--vg-ubuntu--lv--root     732G   43G  652G   7% /
-tmpfs                                       3.9G  8.7M  3.9G   1% /dev/shm
-tmpfs                                       5.0M  4.0K  5.0M   1% /run/lock
-tmpfs                                       3.9G     0  3.9G   0% /run/qemu
-/dev/sda2                                   974M  262M  645M  29% /boot
-/dev/sda1                                   511M  6.1M  505M   2% /boot/efi
-/dev/mapper/ubuntu--vg-ubuntu--lv--goinfre  137G   24G  107G  18% /goinfre
-sgoinfre.42madrid.com:/srv/nfs4/sgoinfre    5.1T  2.3T  2.8T  46% /sgoinfre
-/dev/sdb                                    4.7G  4.4G  337M  93% /home/alluengo
-tmpfs                                       782M  120K  782M   1% /run/user/104428
+du -sh ~/.[!.]* ~/* 2>/dev/null | sort -h | tail -15
 
+rm -rf ~/Desktop/CallMeMaybe/.venv ~/.cache/uv ~/.cache/pip ~/.cache/huggingface
+
+ls -d /sgoinfre/*/alluengo /sgoinfre/alluengo 2>/dev/null
