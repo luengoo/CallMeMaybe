@@ -3,6 +3,7 @@ import json
 import random
 from pathlib import Path
 from src.vocab_loader import _bytes_to_unicode
+from typing import Any
 
 _STUB_DIR = Path(__file__).parent
 _VOCAB_PATH = _STUB_DIR / "fake_vocab.json"
@@ -28,13 +29,13 @@ def _build_fake_vocab_file() -> None:
 
 
 class _FakeTensor:
-    def __init__(self, data: list) -> None:
+    def __init__(self, data: list[Any]) -> None:
         self._data = data
 
     def __getitem__(self, idx: int) -> "_FakeTensor":
         return _FakeTensor(self._data[idx])
 
-    def tolist(self) -> list:
+    def tolist(self) -> list[Any]:
         return self._data
 
 
