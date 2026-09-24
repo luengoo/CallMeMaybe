@@ -1,5 +1,17 @@
-du -sh ~/.[!.]* ~/* 2>/dev/null | sort -h | tail -15
+du -h -d 1 ~ 2>/dev/null | sort -h | tail -15
+12K	/home/alluengo/.vim
+16K	/home/alluengo/.ssh
+40K	/home/alluengo/.docker
+56K	/home/alluengo/.vscode-shared
+68K	/home/alluengo/.pki
+268K	/home/alluengo/.dotnet
+748K	/home/alluengo/Downloads
+59M	/home/alluengo/.cache
+96M	/home/alluengo/Desktop
+139M	/home/alluengo/.marscode
+430M	/home/alluengo/.vscode
+1.1G	/home/alluengo/.config
+1.1G	/home/alluengo/snap
+1.4G	/home/alluengo/.local
+4.3G	/home/alluengo
 
-rm -rf ~/Desktop/CallMeMaybe/.venv ~/.cache/uv ~/.cache/pip ~/.cache/huggingface
-
-ls -d /sgoinfre/*/alluengo /sgoinfre/alluengo 2>/dev/null
