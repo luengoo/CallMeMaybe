@@ -1,0 +1,14 @@
+make install
+uv sync
+Using CPython 3.10.12 interpreter at: /usr/bin/python3
+Creating virtual environment at: .venv
+Resolved 78 packages in 822ms
+      Built llm-sdk @ file:///home/alluengo/Desktop/CallMeMaybe/llm_sdk                                                             Built function-calling @ file:///home/alluengo/Desktop/CallMeMaybe                                                      Prepared 73 packages in 1m 34s
+error: Failed to install: nvidia_nvtx-13.0.85-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl (nvidia-nvtx==13.0.85)
+  cause: Failed to create directory
+         `/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/nvidia/cu13/include/nvtx3/nvtxDetail`
+  cause: failed to create directory
+         `/home/alluengo/Desktop/CallMeMaybe/.venv/lib/python3.10/site-packages/nvidia/cu13/include/nvtx3/nvtxDetail`: No
+         space left on device (os error 28)
+make: *** [Makefile:20: install] Error 2
+
