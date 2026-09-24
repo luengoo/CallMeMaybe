@@ -28,7 +28,9 @@ from src.constrained_decoder import (
 )
 from src.models import FunctionCallResult, FunctionDefinition
 
-_BOOLEAN_CANDIDATES = ["true", "false"]
+# Con espacio inicial: el prompt termina en '":' y en JSON normal el
+# valor va precedido de un espacio (así es como lo tokeniza Qwen).
+_BOOLEAN_CANDIDATES = [" true", " false"]
 
 
 class FunctionCallGenerationError(Exception):
@@ -108,11 +110,16 @@ def generate_function_call(
     param_items = list(fn_def.parameters.items())
 
     for i, (param_name, param_spec) in enumerate(param_items):
-        text += f'"{param_name}": '
+        # El texto termina en '":' sin espacio: el espacio lo aporta el
+        # primer token del valor (' -', ' true'...), como en un JSON
+        # normal. Si lo pusiéramos nosotros, el modelo tendría que
+        # continuar desde un token de espacio suelto, algo que casi no
+        # ha visto al entrenar, y por ejemplo se "come" el signo menos.
+        text += f'"{param_name}":'
         if param_spec.type == "string":
-            # La comilla de apertura la ponemos nosotros: así el modelo
-            # empieza directamente por el contenido del string.
-            text += '"'
+            # En strings sí ponemos la comilla de apertura nosotros: así
+            # el modelo empieza directamente por el contenido.
+            text += ' "'
 
         try:
             value_ids = llm.encode(text)
@@ -125,7 +132,7 @@ def generate_function_call(
                 bool_str = choose_from_candidates(
                     llm, value_ids, candidates=_BOOLEAN_CANDIDATES
                 )
-                value = bool_str == "true"
+                value = bool_str == " true"
             else:  # pragma: no cover - protegido por pydantic Literal
                 raise FunctionCallGenerationError(
                     f"Tipo de parámetro no soportado: {param_spec.type!r}"
@@ -141,8 +148,8 @@ def generate_function_call(
         # (comillas para strings, true/false para booleanos, etc.) sin
         # tener que reconstruirla a mano.
         encoded = json.dumps(value)
-        # Para strings la comilla de apertura ya está en `text`.
-        text += encoded[1:] if param_spec.type == "string" else encoded
+        # Para strings el espacio y la comilla de apertura ya están.
+        text += encoded[1:] if param_spec.type == "string" else " " + encoded
         if i < len(param_items) - 1:
             text += ", "
 

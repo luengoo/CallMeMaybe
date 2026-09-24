@@ -115,6 +115,22 @@ def _is_valid_number_continuation(text: str, addition: str) -> bool:
     return True
 
 
+def _number_piece(generated: str, token: str) -> str | None:
+    """Devuelve los caracteres que `token` aporta al número, o None si
+    no es una continuación válida.
+
+    El prompt termina en '":' (sin espacio), igual que en un JSON
+    normal, así que el primer token del valor suele traer el espacio
+    pegado: ' 3', ' -'. Solo en esa primera posición aceptamos un
+    espacio inicial y lo descartamos.
+    """
+    if generated == "" and token.startswith(" "):
+        token = token[1:]
+    if _is_valid_number_continuation(generated, token):
+        return token
+    return None
+
+
 def generate_number(
     llm: LLMClientLike,
     prompt_ids: list[int],
@@ -123,7 +139,7 @@ def generate_number(
     """Genera un número JSON (int o decimal) token a token.
 
     Mientras el texto acumulado todavía no es un número válido por sí
-    mismo (p. ej. "-", o "3."), se fuerza una continuación válida
+    mismo (p. ej. "", "-", o "3."), se fuerza una continuación válida
     (enmascarado duro, igual que choose_from_candidates). En cuanto el
     texto ya ES un número válido, se deja que el modelo decida
     libremente si quiere seguir extendiéndolo o parar: si su elección
@@ -146,18 +162,18 @@ def generate_number(
 
         if terminal:
             best_id = int(np.argmax(logits))
-            best_text = llm.id_to_str.get(best_id, "")
-            if _is_valid_number_continuation(generated, best_text):
-                current_ids.append(best_id)
-                generated += best_text
-                continue
-            break  # el modelo prefiere algo fuera de la gramática -> paramos
+            piece = _number_piece(generated, llm.id_to_str.get(best_id, ""))
+            if piece is None:
+                break  # el modelo prefiere salir de la gramática: fin
+            current_ids.append(best_id)
+            generated += piece
+            continue
 
         allowed_mask = np.full(logits.shape, False)
         for token_id, token_str in llm.id_to_str.items():
             if token_id >= len(logits):
                 continue
-            if _is_valid_number_continuation(generated, token_str):
+            if _number_piece(generated, token_str) is not None:
                 allowed_mask[token_id] = True
 
         if not allowed_mask.any():
@@ -167,8 +183,10 @@ def generate_number(
 
         masked_logits = np.where(allowed_mask, logits, -np.inf)
         next_token_id = int(np.argmax(masked_logits))
+        piece = _number_piece(generated, llm.id_to_str[next_token_id])
+        assert piece is not None  # garantizado por la máscara
         current_ids.append(next_token_id)
-        generated += llm.id_to_str[next_token_id]
+        generated += piece
 
     if not _NUMBER_RE.fullmatch(generated):
         raise ValueError(
@@ -184,35 +202,29 @@ def generate_number(
 _SIMPLE_ESCAPES = set('"\\/bfnrt')
 
 
-def _consume_string_token(
-    raw: str, escaping: bool, token: str
-) -> tuple[str, bool, bool]:
-    """Añade `token` al contenido crudo (todavía escapado) de un string
-    JSON, carácter a carácter.
+def _quote_closes_string(
+    llm: LLMClientLike, ids: list[int], token_id: int, rest: str
+) -> bool:
+    """Decide si una comilla sin escapar cierra el string o es parte
+    del contenido (los modelos pequeños no siempre escapan las comillas
+    internas, p. ej. 'He said "hi"').
 
-    Returns:
-        (nuevo contenido crudo, si queda un "\\" pendiente,
-         si el string ha terminado).
-    El string termina con una comilla sin escapar (cierre natural) o con
-    un carácter de control. Un escape inválido como "\\d" se trata como
-    una barra literal. Lo que venga en el token tras el cierre se descarta.
+    La regla es la de la propia gramática JSON: tras la comilla de
+    cierre de un valor solo puede venir "," o "}" (con espacios o
+    saltos de línea opcionales).
+      - Si el token trae texto después de la comilla ('",', '"}',
+        '"hi'), lo miramos directamente.
+      - Si la comilla es lo último del token, pedimos al modelo un
+        token más (sin consumirlo) y miramos qué quiere escribir. Como
+        la generación es greedy, ese token es justo el que saldría en
+        el paso siguiente, así que la decisión es coherente.
     """
-    for ch in token:
-        if escaping:
-            if ch not in _SIMPLE_ESCAPES:
-                # El modelo escribió p. ej. "\d" (escape JSON inválido):
-                # lo interpretamos como una barra literal seguida de "d".
-                raw += "\\"
-            raw += ch
-            escaping = False
-        elif ch == '"':
-            return raw, False, True
-        elif ord(ch) < 0x20:
-            return raw, False, True
-        else:
-            raw += ch
-            escaping = ch == "\\"
-    return raw, escaping, False
+    after = rest
+    if not after.strip():
+        logits = np.asarray(llm.next_token_logits(ids + [token_id]))
+        after = llm.id_to_str.get(int(np.argmax(logits)), "")
+    after = after.lstrip(" \t\r\n")
+    return after == "" or after[0] in ",}"
 
 
 def generate_string(
@@ -223,21 +235,26 @@ def generate_string(
     """Genera el CONTENIDO de un string JSON.
 
     El prompt debe terminar YA con la comilla de apertura `"`: así el
-    modelo empieza directamente por el contenido y la siguiente comilla
-    que "quiera" escribir es la de cierre.
+    modelo empieza directamente por el contenido.
 
     En cada paso tomamos el token más probable y lo recorremos carácter
-    a carácter respetando la gramática de strings JSON: se aceptan
-    escapes válidos (`\\\\`, `\\"`, `\\n`…), de modo que valores como la
-    regex `\\d+` se pueden generar. Una comilla sin escapar marca el
-    final. Al acabar se decodifica con json.loads, así que el valor
-    devuelto ya está "desescapado" y listo para meter en el resultado.
+    a carácter respetando la gramática de strings JSON:
+      - Escapes válidos (`\\\\`, `\\"`, `\\n`...) se aceptan, así que
+        valores como la regex `\\d+` se pueden generar. Un escape
+        inválido como `\\d` se interpreta como una barra literal.
+      - Una comilla sin escapar puede ser el cierre o una comilla
+        interna que el modelo no escapó: lo decide
+        _quote_closes_string. Si es interna, la guardamos escapada.
+      - Un carácter de control termina el string.
+    Al acabar se decodifica con json.loads, así que el valor devuelto
+    ya está "desescapado" y listo para meter en el resultado.
 
     Returns:
         El contenido del string (sin comillas, sin escapes JSON).
     """
     raw = ""
     escaping = False
+    finished = False
     current_ids = list(prompt_ids)
 
     for _ in range(max_extra_tokens):
@@ -247,7 +264,26 @@ def generate_string(
         if token == "":
             break
 
-        raw, escaping, finished = _consume_string_token(raw, escaping, token)
+        for pos, ch in enumerate(token):
+            if escaping:
+                if ch not in _SIMPLE_ESCAPES:
+                    raw += "\\"  # "\d" -> barra literal + "d"
+                raw += ch
+                escaping = False
+            elif ch == '"':
+                if _quote_closes_string(
+                    llm, current_ids, best_id, token[pos + 1:]
+                ):
+                    finished = True
+                    break
+                raw += '\\"'
+            elif ord(ch) < 0x20:
+                finished = True
+                break
+            else:
+                raw += ch
+                escaping = ch == "\\"
+
         if finished:
             break
         current_ids.append(best_id)
